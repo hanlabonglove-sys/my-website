@@ -4,6 +4,7 @@ import time
 
 app = Flask(__name__)
 
+# 기본 Flask 로그 설정
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s"
@@ -11,11 +12,14 @@ logging.basicConfig(
 
 
 def get_client_ip():
-    # Render 같은 프록시 환경에서 전달되는 원래 클라이언트 IP
+    """
+    프록시를 통해 전달된 클라이언트 IP를 확인합니다.
+    여러 IP가 전달되면 첫 번째 값을 사용합니다.
+    """
+
     forwarded_for = request.headers.get("X-Forwarded-For")
 
     if forwarded_for:
-        # 여러 IP가 있으면 첫 번째가 원래 클라이언트 IP
         return forwarded_for.split(",")[0].strip()
 
     return request.remote_addr or "unknown"
@@ -31,13 +35,13 @@ def after_request(response):
     elapsed = time.time() - request.start_time
     ip = get_client_ip()
 
-    app.logger.info(
-        "IP=%s | %s %s | %s | %.3fs",
-        ip,
-        request.method,
-        request.path,
-        response.status_code,
-        elapsed
+    print(
+        f"VISITOR | "
+        f"IP={ip} | "
+        f"{request.method} {request.path} | "
+        f"STATUS={response.status_code} | "
+        f"TIME={elapsed:.3f}s",
+        flush=True
     )
 
     return response
@@ -46,6 +50,18 @@ def after_request(response):
 @app.route("/")
 def home():
     return render_template("index.html")
+
+
+@app.route("/hello")
+def hello():
+    return "Hello! 👋"
+
+
+if __name__ == "__main__":
+    app.run(
+        host="0.0.0.0",
+        port=5000
+    )
 
 
 @app.route("/hello")
